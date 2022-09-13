@@ -1,7 +1,18 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import {
+  createSlice,
+  createAsyncThunk,
+  createEntityAdapter,
+} from '@reduxjs/toolkit'
 import { client } from '../../api/client'
 
-const initialState = []
+const usersAdapter = createEntityAdapter()
+
+const initialState = usersAdapter.getInitialState()
+
+export const fetchUsers = createAsyncThunk('user/fetchUsers', async () => {
+  const response = await client.get('/fakeApi/users')
+  return response.data
+})
 
 const usersSlice = createSlice({
   name: 'users',
@@ -9,14 +20,19 @@ const usersSlice = createSlice({
   reducers: {},
   extraReducers(builder) {
     builder.addCase(fetchUsers.fulfilled, (state, action) => {
-      return action.payload
+      return usersAdapter.setAll(state, action.payload)
     })
   },
+  // extraReducers: {
+  //   [fetchUsers.fulfilled]: usersAdapter.setAll,
+  // },
 })
 
 export default usersSlice.reducer
 
-export const fetchUsers = createAsyncThunk('user/fetchUsers', async () => {
-  const response = await client.get('/fakeApi/users')
-  return response.data
-})
+export const { selectAll: selectAllUsers, selectById: selectUserById } =
+  usersAdapter.getSelectors((state) => state.users)
+
+// export const selectAllUsers = (state) => state.users
+// export const selectUserById = (state, userId) =>
+// state.users.find((user) => user.id === userId)

@@ -1,16 +1,16 @@
 import React, { useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 
+import { Spinner } from '../../components/Spinner'
+import { useAddNewPostMutation } from '../api/apiSlice'
 import { selectAllUsers } from '../users/usersSlice'
-import { addNewPost } from './postSlice'
 
 export const AddPostForm = () => {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [userId, setUserId] = useState('')
-  const [addRequestStatus, setAddRequestStatus] = useState('idle')
 
-  const dispatch = useDispatch()
+  const [addNewPost, { isLoading }] = useAddNewPostMutation()
 
   const users = useSelector(selectAllUsers)
 
@@ -18,21 +18,16 @@ export const AddPostForm = () => {
   const onContentChanged = (e) => setContent(e.target.value)
   const onAuthorChanged = (e) => setUserId(e.target.value)
 
-  const canSave =
-    [title, content, userId].every(Boolean) && addRequestStatus === 'idle'
-
+  const canSave = [title, content, userId].every(Boolean) && !isLoading
   const onSavePostClicked = async () => {
     if (canSave) {
       try {
-        setAddRequestStatus('pending')
-        await dispatch(addNewPost({ title, content, user: userId })).unwrap()
+        await addNewPost({ title, content, user: userId }).unwrap()
         setTitle('')
         setContent('')
         setUserId('')
       } catch (err) {
         console.error('Failed to save the post: ', err)
-      } finally {
-        setAddRequestStatus('idle')
       }
     }
   }
@@ -43,9 +38,11 @@ export const AddPostForm = () => {
     </option>
   ))
 
-  return (
-    <section>
-      <h2>添加新帖子</h2>
+  let renderContent
+  if (isLoading) {
+    renderContent = <Spinner text="Loading..." />
+  } else {
+    renderContent = (
       <form>
         <label htmlFor="postTitle">帖子标题：</label>
         <input
@@ -72,6 +69,13 @@ export const AddPostForm = () => {
           保存帖子
         </button>
       </form>
+    )
+  }
+
+  return (
+    <section>
+      <h2>添加新帖子</h2>
+      {renderContent}
     </section>
   )
 }
